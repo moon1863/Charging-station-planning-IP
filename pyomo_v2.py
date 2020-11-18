@@ -13,6 +13,7 @@ matrix=pd.read_csv("pivot_table_EVCS.csv",header=1)
 matrix.drop(['start_hr'],axis=1,inplace=True)
 
 #set sub values
+#worng
 I=matrix.iloc[1:,0].values
 
 dri_time_location_dict=matrix.set_index('Unnamed: 1').transpose().to_dict(orient='dict')
