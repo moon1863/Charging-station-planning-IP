@@ -85,6 +85,90 @@ piv_table_unique=piv_table_unique.add_suffix('').reset_index()
 piv_table_unique.to_csv("pivot_table_EVCS.csv")  
 
 
+#sample data 
+# =============================================================================
+# sample_dic={108:[0,(30.265,-97.732),0,0,0,(30.319,-97.738),0,(30.5,-97.737)]}
+# import pandas as pd
+# sample_df=pd.DataFrame.from_dict(sample_dic, orient='index')
+# list_coordinate={}
+# list_position=[]
+# for i in range (0,8):
+#     if sample_df.iloc[0][i] !=0:
+#         list_position.append(i)
+#         list_coordinate[i]=sample_df.iloc[0][i]
+#     else: sample_df.iloc[0][i]=sample_df.iloc[0][i]    
+# 
+# dist=[]
+# for i in range(0,8):
+#     try:
+#         dist.append(distance(list_coordinate[list_position[i]],list_coordinate[list_position[i+1]]))          
+#     except IndexError:
+#         break
+#     
+# dist_list=[]
+# for i in range (0,list_position[0]+1):    
+#     dist_list.append(0)
+#       
+# for i in range (list_position[0]+1,list_position[1]+1):    
+#     dist_list.append(dist[0]/(list_position[1]-list_position[0]))
+#     
+# for i in range (list_position[1]+1,list_position[2]+1):    
+#     dist_list.append(dist[1]/(list_position[2]-list_position[1]))  
+# =============================================================================
+
+dri_time_location_dict
+dri_df=pd.DataFrame.from_dict(dri_time_location_dict, orient='index')
+list_coordinate={}
+list_position=[]
+for i in range (0,24):
+    if dri_df.iloc[0][i] !=0:
+        list_position.append(i)
+        list_coordinate[i]=dri_df.iloc[0][i]
+    else: dri_df.iloc[0][i]=dri_df.iloc[0][i]    
+
+
+list_coordinate.astype(int)
+dist=[]
+for i in range(0,24):
+    try:
+        dist.append(distance((int(list_coordinate[list_position[i]])),
+                             (int(list_coordinate[list_position[i+1]]))))          
+    except IndexError:
+        break
+    
+dist_list=[]
+for i in range (0,list_position[0]+1):    
+    dist_list.append(0)
+      
+for i in range (list_position[0]+1,list_position[1]+1):    
+    dist_list.append(dist[0]/(list_position[1]-list_position[0]))
+    
+for i in range (list_position[1]+1,list_position[2]+1):    
+    dist_list.append(dist[1]/(list_position[2]-list_position[1]))  
+
+
+
+#usung haversine formula find distance
+from math import sin, cos, sqrt, atan2, radians
+
+# approximate radius of earth in km
+def distance(loc_i,loc_f):
+    R = 6373.0
+    
+    lat1 = radians(loc_i[0])
+    lon1 = radians(loc_i[1])
+    lat2 = radians(loc_f[0])
+    lon2 = radians(loc_f[1])
+    
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    
+    a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    
+    return R * c
+
+
 
 
 
