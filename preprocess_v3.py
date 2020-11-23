@@ -166,36 +166,6 @@ def distance(loc_i,loc_f):
 #######DISTANCE
 
 li=list(range(0,1440))
-dictionary_1={}
-dictionary_2={}
-dictionary_3={}
-dictionary_4={}
-dictionary_5={}
-dictionary_6={}
-dictionary_7={}
-dictionary_8={}
-dictionary_9={}
-dictionary_10={}
-dictionary_11={}
-dictionary_12={}
-dictionary_13={}
-dictionary_14={}
-dictionary_15={}
-dictionary_16={}
-dictionary_17={}
-dictionary_18={}
-dictionary_19={}
-dictionary_20={}
-dictionary_21={}
-dictionary_22={}
-dictionary_23={}
-dictionary_24={}
-dictionary_25={}
-dictionary_26={}
-dictionary_27={}
-dictionary_28={}
-dictionary_29={}
-dictionary_0={}
 
 #list_coordinate={}
 d=0 #started from 0 to 26 we need use loop, we will loop do it later
@@ -245,21 +215,6 @@ cum_distance_df=pd.DataFrame.from_dict(distance_dict, orient='index')
 cum_distance_df.to_csv("cum_distance_df.csv")
 cum_distance_df_2=cum_distance_df.reset_index()
 ####################
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -366,27 +321,136 @@ time_intv_df_2=time_intv_df.reset_index()
 
 
 
+#SOC and GT comparison
+SOC=pd.read_csv("SOC1440.csv")
+SOC.drop("Unnamed: 0",1,inplace=True)
+
+GT=pd.read_csv("time_intv_df.csv")
+
+
+list_number=list(range(0,1440))
+l=[str(x) for x in list_number]
+
+SOC.iloc[:,1:]=SOC.iloc[:,1:].astype(float)
+    
+for i in range (1,1440):
+    SOC.loc[(SOC.iloc[:,i]<0.5)&(GT.iloc[:,i]>60),l[i-1]] = "CN"
+    
+SOC.to_csv("CN_SOC_GTT.csv")    
+
+aa=pd.read_csv("CN_SOC_GTT.csv")    
+
+
+a=list(dri_df.columns)
+a=[str(x) for x in a]
+
+dri_df_str_col=dri_df.copy()
+dri_df_str_col.columns=a
+dri_df_str_col=dri_df_str_col.reset_index()
+
+
+aa2=aa[list(dri_df_str_col.columns)]#df with CN mention and same size with dri_df_str_col
+
+
+aa2.insert(loc=0, column='driver_id', value=list(aa['index']))
 
 
 
 
+#modified df particular drivers
+
+matched_driver=[70,1418,2483,2648,2862,3241,3662,4172,4442,4656]
+
+aa2_mdf=aa2.loc[aa2['driver_id'].isin(matched_driver)]
+dri_df_str_col_mdf=dri_df_str_col.loc[dri_df_str_col['index'].isin(matched_driver)]
 
 
 
 
+# =============================================================================
+# list_number=list(range(0,1440))
+# pos=[str(x) for x in list_number]
+# =============================================================================
+list_number_2=list(aa2.columns)
+for i in range(1,262):
+    dri_df_str_col_mdf.loc[(dri_df_str_col_mdf.iloc[:,i]!=0)&(aa2.iloc[:,i]!="CN"),
+                           list_number_2[i]] = 0
+    
+dri_df_str_col_mdf.to_csv("coord_CN_df.csv")
+
+    
+
+    
+dri_df_str_col_mdf[]
+# =============================================================================
+# 
+# list_N=[]
+# a1 = [[100, 0, 100], [4, 0, 6], [100, 2, 3]]
+# df_a = pd.DataFrame(a1, columns=['a', 'b', 'c'])
+# 
+# for i in range (0,3):
+#     for j in range(0,3):
+#         if df_a.iloc[i,j] !=0:
+#             list_N.append(df_a.iloc[i,j])
+# =============================================================================
+
+# extract the charging need locations
+list_N=[]
+for r in range(0,10):
+    for c in range(1,262):
+        if dri_df_str_col_mdf.iloc[r,c]!=0:
+            list_N.append(dri_df_str_col_mdf.iloc[r,c])
+
+N_df=pd.DataFrame({'N_coord':list_N})            
+N_df.to_csv("N_df.csv")            
+
+N_lat=[]
+for i in range(0,15):
+    N_lat.append(N_df.iloc[i,0][0])
+    
+N_long=[]
+for i in range(0,15):
+    N_long.append(N_df.iloc[i,0][1])    
+
+parcel_id=list(range(0,15))
 
 
 
+#k means clustering 
+df_clst={'parcel_id':parcel_id,'N_lat':N_lat,'N_long':N_long}
+
+df_clst=pd.DataFrame.from_dict(df_clst)
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.cluster import KMeans
+import seaborn as sns; sns.set()
+import csv
+
+K_clusters = range(1,10)
+kmeans = [KMeans(n_clusters=i) for i in K_clusters]
+Y_axis = df_clst[['N_lat']]
+X_axis = df_clst[['N_long']]
+score = [kmeans[i].fit(Y_axis).score(Y_axis) for i in range(len(kmeans))]
+# Visualize
+plt.plot(K_clusters, score)
+plt.xlabel('Number of Clusters')
+plt.ylabel('Score')
+plt.title('Elbow Curve')
+plt.show()
 
 
+kmeans = KMeans(n_clusters = 3, init ='k-means++')
+kmeans.fit(df_clst[df_clst.columns[1:3]]) # Compute k-means clustering.
+df_clst['cluster_label'] = kmeans.fit_predict(df_clst[df_clst.columns[1:3]])
+centers = kmeans.cluster_centers_ # Coordinates of cluster centers
+
+labels = kmeans.predict(df_clst[df_clst.columns[1:3]]) # Labels of each point
 
 
-
-
-
-
-
-
+df_clst.plot.scatter(x = 'N_lat', y = 'N_long', c=labels, s=50, cmap='viridis')
+plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
 
 
 
