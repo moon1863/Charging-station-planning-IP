@@ -23,7 +23,7 @@ from datetime import datetime
 df_2['started_on']=pd.to_datetime(df_2['started_on'],utc=True) #convert object to date format
 df_2['start_date']=df_2['started_on'].dt.date
 temp=(df_2['start_date'].value_counts().head(100))
-temp.to_csv("temp.csv")
+#temp.to_csv("temp.csv")
 df_2['start_date']=pd.to_datetime(df_2['start_date'])
 df_3_22_17=df_2[df_2['start_date']=="2017-03-22"]
 
@@ -60,9 +60,7 @@ for i in range (0,1131):
     df_3.iloc[i]=df_3.iloc[i].replace(to_replace=FV_model_li,value=model_replacer)
     
 df_3=df_3.add_suffix('').reset_index()
-df_4=df_3_22_17.merge(df_3,left_on="driver_id",right_on="driver_id") 
-  
-#model_y denotes randomly converted EV model  
+df_4=df_3_22_17.merge(df_3,left_on="driver_id",right_on="driver_id")  #model_y denotes randomly converted EV model  
 
 #assign EV properties and keep remaining blank
 df_5=df_4.merge(df_EV_capacity_RA,left_on="model_y",right_on="model")
@@ -76,7 +74,6 @@ df_6=df_6.add_suffix('').reset_index()
 df_6['charge_needed']=df_6.apply(lambda r:1 
                                  if (int(r.capacity) < r.energy_required_KWH) 
                                  else 0,axis=1)
-
 
 qry_driver_date_charge_needed=df_6[df_6.charge_needed==1][['driver_id']]
 
@@ -144,7 +141,7 @@ dri_df.fillna(0,inplace=True)
 dri_df_col_li=dri_df.columns.tolist()
 
 
-# approximate radius of earth in km
+# distance using Haversine formula
 import math
 from math import *
 def distance(loc_i,loc_f):
@@ -166,47 +163,51 @@ def distance(loc_i,loc_f):
 #######DISTANCE
 
 li=list(range(0,1440))
-
-#list_coordinate={}
-d=0 #started from 0 to 26 we need use loop, we will loop do it later
-list_position=[]
-for i in dri_df_col_li:
-    if dri_df.iloc[d][i] !=0:
-        list_position.append(i)
-        list_coordinate[i]=dri_df.iloc[d][i]
-    else: dri_df.iloc[d][i]=dri_df.iloc[d][i]    
-
-
-dist=[]#distance only for points with coord
-for i in range(0,len(list_position)):
-    try:
-        dist.append(distance(list_coordinate[list_position[i]],
-                             list_coordinate[list_position[i+1]]))          
-    except IndexError:
-        break
+dict_li=[]
+#d=0#started from 0 to 26 we need use loop, we will loop do it later
+for d in range(0,26):
+    list_coordinate={}
+    list_position=[]
+    for i in dri_df_col_li:
+        if dri_df.iloc[d][i] !=0:
+            list_position.append(i)
+            list_coordinate[i]=dri_df.iloc[d][i]
+        else: dri_df.iloc[d][i]=dri_df.iloc[d][i]    
     
-dist_list=[]#for all minutes
-for i in range (0,list_position[0]+1):    
-    dist_list.append(0)
+    
+    dist=[]#distance only for points with coord
+    for i in range(0,len(list_position)):
+        try:
+            dist.append(distance(list_coordinate[list_position[i]],
+                                 list_coordinate[list_position[i+1]]))          
+        except IndexError:
+            break
+        
+    dist_list=[]#for all minutes
+    for i in range (0,list_position[0]+1):    
+        dist_list.append(0)
+    
+    for i in range(0,len(list_position)-1):     #find distance for all minutes
+        for j in range(list_position[i]+1,list_position[i+1]+1):    
+            dist_list.append(dist[i]/(list_position[i+1]-list_position[i]))
+    
+    for i in range (list_position[-1],1439):    
+        dist_list.append(0)        
+    
+    for i in range(0,len(dist_list)-1):         #find cumulative distance              
+        dist_list[i+1]=dist_list[i]+dist_list[i+1]
+    
+    dict_li.append(dict(zip(li,dist_list)))
+#dictionary_0=dict(zip(li,dist_list)) #combining all dictionary_driver
+#loop will end up here
 
-for i in range(0,len(list_position)-1):     #find distance for all minutes
-    for j in range(list_position[i]+1,list_position[i+1]+1):    
-        dist_list.append(dist[i]/(list_position[i+1]-list_position[i]))
-
-for i in range (list_position[-1],1439):    
-    dist_list.append(0)        
-
-for i in range(0,len(dist_list)-1):         #find cumulative distance              
-    dist_list[i+1]=dist_list[i]+dist_list[i+1]
-
- 
-dictionary_26=dict(zip(li,dist_list)) #combining all dictionary_driver
- 
-dict_li=[dictionary_0,dictionary_1,dictionary_2,dictionary_3,dictionary_4,dictionary_5,
-dictionary_6,dictionary_7,dictionary_8,dictionary_9,dictionary_10,dictionary_11,dictionary_12,
-dictionary_13,dictionary_14,dictionary_15,dictionary_16,dictionary_17,dictionary_18,
-dictionary_19,dictionary_20,dictionary_21,dictionary_22,dictionary_23,dictionary_24,
-dictionary_25]
+# =============================================================================
+# dict_li=[dictionary_0,dictionary_1,dictionary_2,dictionary_3,dictionary_4,dictionary_5,
+# dictionary_6,dictionary_7,dictionary_8,dictionary_9,dictionary_10,dictionary_11,dictionary_12,
+# dictionary_13,dictionary_14,dictionary_15,dictionary_16,dictionary_17,dictionary_18,
+# dictionary_19,dictionary_20,dictionary_21,dictionary_22,dictionary_23,dictionary_24,
+# dictionary_25]
+# =============================================================================
 
 distance_dict=dict(zip(list(dri_df.index),dict_li)) #combined with corresponding driver id
         
@@ -219,8 +220,6 @@ cum_distance_df_2=cum_distance_df.reset_index()
 
 
 ##########time interval from immediate next trip 
-
-  
 def time_diff(x,y):
     return x-y
 s=0
@@ -318,9 +317,6 @@ time_intv_df=pd.DataFrame.from_dict(dictionary_time, orient='index')
 time_intv_df.to_csv("time_intv_df.csv")
 time_intv_df_2=time_intv_df.reset_index()
 
-
-
-
 #SOC and GT comparison
 SOC=pd.read_csv("SOC1440.csv")
 SOC.drop("Unnamed: 0",1,inplace=True)
@@ -355,16 +351,12 @@ aa2=aa[list(dri_df_str_col.columns)]#df with CN mention and same size with dri_d
 aa2.insert(loc=0, column='driver_id', value=list(aa['index']))
 
 
-
-
 #modified df particular drivers
 
 matched_driver=[70,1418,2483,2648,2862,3241,3662,4172,4442,4656]
 
 aa2_mdf=aa2.loc[aa2['driver_id'].isin(matched_driver)]
 dri_df_str_col_mdf=dri_df_str_col.loc[dri_df_str_col['index'].isin(matched_driver)]
-
-
 
 
 # =============================================================================
@@ -377,9 +369,6 @@ for i in range(1,262):
                            list_number_2[i]] = 0
     
 dri_df_str_col_mdf.to_csv("coord_CN_df.csv")
-
-    
-
     
 dri_df_str_col_mdf[]
 # =============================================================================
@@ -445,67 +434,17 @@ kmeans = KMeans(n_clusters = 3, init ='k-means++')
 kmeans.fit(df_clst[df_clst.columns[1:3]]) # Compute k-means clustering.
 df_clst['cluster_label'] = kmeans.fit_predict(df_clst[df_clst.columns[1:3]])
 centers = kmeans.cluster_centers_ # Coordinates of cluster centers
+centers_tuple_li=[tuple(row) for row in centers]
+centers_df=pd.DataFrame({'center_coord':centers_tuple_li})
+centers_df.to_csv("centers_df.csv")
 
 labels = kmeans.predict(df_clst[df_clst.columns[1:3]]) # Labels of each point
+N_cluster_center_df=pd.DataFrame({'N_cl_cent':list(labels)})            
+N_df.to_csv("N_df.csv") 
 
-
+#plot
 df_clst.plot.scatter(x = 'N_lat', y = 'N_long', c=labels, s=50, cmap='viridis')
 plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #filter driver id, capcaity, MKWH
 df5_f=df_5[['driver_id','capacity','MKWH']]
