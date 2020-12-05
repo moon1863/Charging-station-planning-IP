@@ -7,43 +7,46 @@ Created on Fri Nov 20 16:00:07 2020
 
 import pandas as pd
 
-#read data
-dfA=pd.read_csv("Rides_DataA.csv")
-dfB=pd.read_csv("Rides_DataB.csv")
+# =============================================================================
+# #read data
+# dfA=pd.read_csv("Rides_DataA.csv")
+# dfB=pd.read_csv("Rides_DataB.csv")
+# 
+# #combine data dfA and dfB
+# df=dfA.merge(dfB,left_on="RIDE_ID",right_on=['RIDE_ID'])
+# df_2=df[['RIDE_ID', 'started_on', 'completed_on', 'start_location_long', 'start_location_lat',
+#        'distance_travelled', 'end_location_lat', 'end_location_long','active_driver_id','rider_id',
+#        'base_fare', 'total_fare', 'rate_per_mile', 'rate_per_minute',
+#        'time_fare','driving_time_to_rider','driver_id', 'car_id','make', 'model', 'year']]
+# 
+# #filter wednesday with maximum trips
+# from datetime import datetime
+# df_2['started_on']=pd.to_datetime(df_2['started_on'],utc=True) #convert object to date format
+# df_2['start_date']=df_2['started_on'].dt.date
+# temp=(df_2['start_date'].value_counts().head(100))#datewise top 100 trip number generated 
+# temp.to_csv("day_vs_trip.csv")# opened in excel and check the day 
+# df_2['start_date']=pd.to_datetime(df_2['start_date'])
+# df_3_15_17=df_2[df_2['start_date']=="2017-03-15"]#wednesday with max trip
+# 
+# #generate cumulative minutes from the beginning of day
+# df_3_15_17['start_minute']=df_3_15_17['started_on'].dt.minute
+# df_3_15_17['start_hr']=df_3_15_17['started_on'].dt.hour
+# df_3_15_17['start_cum_minute']=(df_3_15_17['start_hr']*60)+(df_3_15_17['start_minute'])
+# df_3_15_17.to_csv("df_3_15_17.csv")
+# =============================================================================
 
-#combine data dfA and dfB
-df=dfA.merge(dfB,left_on="RIDE_ID",right_on=['RIDE_ID'])
-df_2=df[['RIDE_ID', 'started_on', 'completed_on', 'start_location_long', 'start_location_lat',
-       'distance_travelled', 'end_location_lat', 'end_location_long','active_driver_id','rider_id',
-       'base_fare', 'total_fare', 'rate_per_mile', 'rate_per_minute',
-       'time_fare','driving_time_to_rider','driver_id', 'car_id','make', 'model', 'year']]
-
-#filter wednesday with maximum trips
-from datetime import datetime
-df_2['started_on']=pd.to_datetime(df_2['started_on'],utc=True) #convert object to date format
-df_2['start_date']=df_2['started_on'].dt.date
-temp=(df_2['start_date'].value_counts().head(100))
-#temp.to_csv("temp.csv")
-df_2['start_date']=pd.to_datetime(df_2['start_date'])
-df_3_22_17=df_2[df_2['start_date']=="2017-03-22"]
-
-#generate cumulative minutes from the beginning of day
-df_3_22_17['start_minute']=df_3_22_17['started_on'].dt.minute
-df_3_22_17['start_hr']=df_3_22_17['started_on'].dt.hour
-df_3_22_17['start_cum_minute']=(df_3_22_17['start_hr']*60)+(df_3_22_17['start_minute'])
-
+#you can start from here. ABove commented section are the base.NEVER DELETE
+df_3_15_17=pd.read_csv("df_3_15_17.csv")
 
 #set up coordinate
-subset_strt_location = df_3_22_17[['start_location_lat','start_location_long']]
-df_3_22_17['coord_start'] = [tuple(x) for x in subset_strt_location.to_numpy()]
+subset_strt_location = df_3_15_17[['start_location_lat','start_location_long']]
+df_3_15_17['coord_start'] = [tuple(x) for x in subset_strt_location.to_numpy()]
 
-subset_end_location = df_3_22_17[['end_location_lat','end_location_long']]
-df_3_22_17['coord_end'] = [tuple(x) for x in subset_end_location.to_numpy()]
+subset_end_location = df_3_15_17[['end_location_lat','end_location_long']]
+df_3_15_17['coord_end'] = [tuple(x) for x in subset_end_location.to_numpy()]
 
-
-df_3=df_3_22_17.groupby(['driver_id'])['model'].first()
+df_3=df_3_15_17.groupby(['driver_id'])['model'].first()
 df_3=df_3.to_frame()
-
 
 #assign random model for FV
 df_EV_capacity_RA=pd.read_csv("EV_capacity_RA.csv")
@@ -55,35 +58,81 @@ FV_model_li=FV_model_srs.tolist()
 
 
 import random
-for i in range (0,1131):
+for i in range (0,len(df_3)):
     model_replacer=random.choice(EV_model_li)
     df_3.iloc[i]=df_3.iloc[i].replace(to_replace=FV_model_li,value=model_replacer)
     
 df_3=df_3.add_suffix('').reset_index()
-df_4=df_3_22_17.merge(df_3,left_on="driver_id",right_on="driver_id")  #model_y denotes randomly converted EV model  
+df_4=df_3_15_17.merge(df_3,left_on="driver_id",
+                      right_on="driver_id")  #model_y denotes randomly converted EV model  
 
-#assign EV properties and keep remaining blank
+#assign EV properties 
 df_5=df_4.merge(df_EV_capacity_RA,left_on="model_y",right_on="model")
+df_5.drop('Unnamed: 0',axis=1,inplace=True)
 
-#energy demand ridewise
-df_5['energy_required_KWH']=df_5['distance_travelled']*.001*0.62/df_5['MKWH']
-df_6=df_5.groupby(['driver_id','capacity'])['energy_required_KWH'].sum()
-df_6=df_6.add_suffix('').reset_index()
+# =============================================================================
+# #will use later , after usage remove it. energy demand ridewise
+# df_5['energy_required_KWH']=df_5['distance_travelled']*.001*0.62/df_5['MKWH']
+# df_6=df_5.groupby(['driver_id','capacity'])['energy_required_KWH'].sum()
+# df_6=df_6.add_suffix('').reset_index()
+# =============================================================================
 
-#create daily data
-df_6['charge_needed']=df_6.apply(lambda r:1 
-                                 if (int(r.capacity) < r.energy_required_KWH) 
-                                 else 0,axis=1)
+# =============================================================================
+# #create daily data
+# df_6['charge_needed']=df_6.apply(lambda r:1 
+#                                  if (int(r.capacity) < r.energy_required_KWH) 
+#                                  else 0,axis=1)
+# 
+# qry_driver_date_charge_needed=df_6[df_6.charge_needed==1][['driver_id']]
+# 
+# qry_driver_date_charge_needed['driver_id']=(qry_driver_date_charge_needed
+#                                                ['driver_id']).astype(int)
+# 
+# df_7=df_5.merge(qry_driver_date_charge_needed,left_on=['driver_id']\
+#              ,right_on=['driver_id'],how='right')\
+#     [['driver_id','coord_start','coord_end','start_cum_minute']]
+# =============================================================================
 
-qry_driver_date_charge_needed=df_6[df_6.charge_needed==1][['driver_id']]
+##find lambda i.e., distance factor
 
-qry_driver_date_charge_needed['driver_id']=(qry_driver_date_charge_needed
-                                               ['driver_id']).astype(int)
+# distance using Haversine formula
+import math
+from math import *
+def distance(loc_i,loc_f):
+    R = 6373.0
+    
+    lat1 = radians(loc_i[0])
+    lon1 = radians(loc_i[1])
+    lat2 = radians(loc_f[0])
+    lon2 = radians(loc_f[1])
+    
+    dlon = lon2 - lon1
+    dlat = lat2 - lat1
+    
+    a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    
+    return R * c
 
-df_7=df_5.merge(qry_driver_date_charge_needed,left_on=['driver_id']\
-             ,right_on=['driver_id'],how='right')\
-    [['driver_id','coord_start','coord_end','start_cum_minute']]
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   
 #create_pivot_table
 pivot=pd.pivot_table(df_7,index=['driver_id'],columns=['start_cum_minute'],\
                values=['coord_start'],aggfunc="first")
@@ -141,24 +190,7 @@ dri_df.fillna(0,inplace=True)
 dri_df_col_li=dri_df.columns.tolist()
 
 
-# distance using Haversine formula
-import math
-from math import *
-def distance(loc_i,loc_f):
-    R = 6373.0
-    
-    lat1 = radians(loc_i[0])
-    lon1 = radians(loc_i[1])
-    lat2 = radians(loc_f[0])
-    lon2 = radians(loc_f[1])
-    
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
-    
-    a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
-    c = 2 * atan2(sqrt(a), sqrt(1 - a))
-    
-    return R * c
+
 
 #######DISTANCE
 
