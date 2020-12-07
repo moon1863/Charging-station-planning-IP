@@ -175,7 +175,7 @@ dri_df.rename(columns={'index':'driver_id'},inplace=True)
 #######DISTANCE
 li=dri_df_col_li#old one (errorful we will use if needed later): li=list(range(0,len(dri_df_col_li)))
 dict_li=[]
-for d in range(0,100):#for full data, use len(dri_df)
+for d in range(0,500):#for full data, use len(dri_df)
     list_coordinate={}
     list_position=[]
     for i in dri_df_col_li:
@@ -218,10 +218,10 @@ cum_distance_df_2.rename(columns={'index':'driver_id'},inplace=True)
 
 
 #distance converted to routing distance using lambda
-df_6_100=df_6.head(100)
-cum_distance_df_3=cum_distance_df_2.merge(df_6_100,left_on="driver_id",right_on="driver_id")
+df_6_500=df_6.head(500)
+cum_distance_df_3=cum_distance_df_2.merge(df_6_500,left_on="driver_id",right_on="driver_id")
 
-for i in range(0,100):
+for i in range(0,500):
     for j in range (1,1441):
         cum_distance_df_3.iloc[i,j]=(cum_distance_df_3.iloc[i,j])*(cum_distance_df_3.iloc[i,1443]) 
 
@@ -232,7 +232,7 @@ cum_distance_df_4=cum_distance_df_3.drop(columns=["distance_travelled","shortest
 df_5_1=df_5[['driver_id','capacity','MKWH']].drop_duplicates()
 soc=cum_distance_df_4.merge(df_5_1,left_on="driver_id",right_on="driver_id")
 
-for i in range(0,100):
+for i in range(0,500):
     for j in range (1,1441):
         soc.iloc[i,j]=100-(((soc.iloc[i,j])*0.62)/((soc.iloc[i,1442])*(soc.iloc[i,1441])))*100 
 
@@ -242,9 +242,9 @@ soc.to_csv("SOC.csv")
 from functions import time_diff
 
 s=0
-p=['']*100 #for full data, replace 150 with len(dri_df)
+p=['']*500 #for full data, replace 150 with len(dri_df)
 
-for d in range (0,100): #for full data, replace 150 with len(dri_df)
+for d in range (0,500): #for full data, replace 150 with len(dri_df)
     m=[0]*len(li)#blank list
     
     list_position_ti=[]
@@ -344,7 +344,7 @@ gt=pd.read_csv("time_intv_df_2.csv")
 gt.drop(columns=["Unnamed: 0"],inplace=True)
 
 list_number=list(range(0,1440))
-l=[str(x) for x in list_number]
+l=[str(x) for x in list_number]#soc's columns are string therefore, string list created
 
 #soc.iloc[:,1:]=soc.iloc[:,1:].astype(float)
     
@@ -353,7 +353,7 @@ for i in range (1,1440):
     
 soc.to_csv("CN_SOC_GT.csv")    
 
-aa=pd.read_csv("CN_SOC_GTT.csv")    
+   
 
 
 # =============================================================================
@@ -385,14 +385,33 @@ aa=pd.read_csv("CN_SOC_GTT.csv")
 # list_number=list(range(0,1440))
 # pos=[str(x) for x in list_number]
 # =============================================================================
-list_number_2=list(aa2.columns)
-for i in range(1,262):
-    dri_df_str_col_mdf.loc[(dri_df_str_col_mdf.iloc[:,i]!=0)&(aa2.iloc[:,i]!="CN"),
+
+soc2=pd.read_csv("CN_SOC_GT.csv") 
+soc2.drop(columns=["Unnamed: 0"],inplace=True)
+
+dri_df_mdf=dri_df.head(500)#for full data, remove head(100)
+dri_df_mdf.columns=dri_df_mdf.columns.astype(str)#column converted to str
+
+list_number_2=list(soc2.columns)
+for i in range(1,1440):
+    dri_df_mdf.loc[(dri_df_mdf.iloc[:,i]!=0)&(soc2.iloc[:,i]!="CN"),
                            list_number_2[i]] = 0
     
-dri_df_str_col_mdf.to_csv("coord_CN_df.csv")
-    
-dri_df_str_col_mdf[]
+dri_df_mdf.to_csv("coord_CN.csv")
+
+list_coordinate_CN={}
+list_position_CN=[]
+for d in range(0,500):#for full data, use len(dri_df)
+    for i in l:
+        if dri_df_mdf.iloc[d][i] !=0:
+            list_position_CN.append(i)
+            list_coordinate_CN[i]=dri_df_mdf.iloc[d][i]#listcoordinate with time as keys
+
+time_coordinate_CN=pd.DataFrame.from_dict(list_coordinate_CN,orient="index")
+time_coordinate_CN=time_coordinate_CN.reset_index()
+time_coordinate_CN.rename(columns={"index":"driver_id",0:"latitude",1:"longitude"},inplace=True)
+time_coordinate_CN.to_csv("time_coordinate_CN.csv")
+
 # =============================================================================
 # 
 # list_N=[]
@@ -405,32 +424,43 @@ dri_df_str_col_mdf[]
 #             list_N.append(df_a.iloc[i,j])
 # =============================================================================
 
-# extract the charging need locations
-list_N=[]
-for r in range(0,10):
-    for c in range(1,262):
-        if dri_df_str_col_mdf.iloc[r,c]!=0:
-            list_N.append(dri_df_str_col_mdf.iloc[r,c])
-
-N_df=pd.DataFrame({'N_coord':list_N})            
-N_df.to_csv("N_df.csv")            
-
-N_lat=[]
-for i in range(0,15):
-    N_lat.append(N_df.iloc[i,0][0])
-    
-N_long=[]
-for i in range(0,15):
-    N_long.append(N_df.iloc[i,0][1])    
-
-parcel_id=list(range(0,15))
+# =============================================================================
+# # extract the charging need locations
+# list_N=[]
+# for r in range(0,10):
+#     for c in range(1,262):
+#         if dri_df_str_col_mdf.iloc[r,c]!=0:
+#             list_N.append(dri_df_str_col_mdf.iloc[r,c])
+# 
+# N_df=pd.DataFrame({'N_coord':list_N})            
+# N_df.to_csv("N_df.csv")            
+# 
+# N_lat=[]
+# for i in range(0,15):
+#     N_lat.append(N_df.iloc[i,0][0])
+#     
+# N_long=[]
+# for i in range(0,15):
+#     N_long.append(N_df.iloc[i,0][1])    
+# 
+# parcel_id=list(range(0,15))
+# =============================================================================
 
 
 
 #k means clustering 
+N_lat=[x[0] for x in list(list_coordinate_CN.values())]#find first element of tuple which is values in dict
+N_long=[x[1] for x in list(list_coordinate_CN.values())]#find first element of tuple which is values in dict
+parcel_id=list(range(0,len(N_lat)))
+
+
 df_clst={'parcel_id':parcel_id,'N_lat':N_lat,'N_long':N_long}
 
 df_clst=pd.DataFrame.from_dict(df_clst)
+df_clst.to_csv("df_clst.csv")#combined lat,long,clustername
+df_clst=pd.read_csv("df_clst.csv")
+df_clst=df_clst.drop(columns=["Unnamed: 0"])
+
 
 import pandas as pd
 import numpy as np
@@ -439,9 +469,9 @@ from sklearn.cluster import KMeans
 import seaborn as sns; sns.set()
 import csv
 
-K_clusters = range(1,10)
+K_clusters = range(1,20)
 kmeans = [KMeans(n_clusters=i) for i in K_clusters]
-Y_axis = df_clst[['N_lat']]
+Y_axis = df_clst[['N_lat']]#two bracket makes it dataframe
 X_axis = df_clst[['N_long']]
 score = [kmeans[i].fit(Y_axis).score(Y_axis) for i in range(len(kmeans))]
 # Visualize
@@ -452,8 +482,9 @@ plt.title('Elbow Curve')
 plt.show()
 
 
-kmeans = KMeans(n_clusters = 3, init ='k-means++')
-kmeans.fit(df_clst[df_clst.columns[1:3]]) # Compute k-means clustering.
+kmeans = KMeans(n_clusters = 10, init ='k-means++')
+#kmeans.fit(df_clst[df_clst.columns[1:3]]) # Compute k-means clustering.
+
 df_clst['cluster_label'] = kmeans.fit_predict(df_clst[df_clst.columns[1:3]])
 centers = kmeans.cluster_centers_ # Coordinates of cluster centers
 centers_tuple_li=[tuple(row) for row in centers]
@@ -468,36 +499,20 @@ N_df.to_csv("N_df.csv")
 df_clst.plot.scatter(x = 'N_lat', y = 'N_long', c=labels, s=50, cmap='viridis')
 plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
 
-#filter driver id, capcaity, MKWH
-df5_f=df_5[['driver_id','capacity','MKWH']]
-df5_f=df5_f.drop_duplicates()
-
-
-#left merge
-df_8=cum_distance_df_2.merge(df5_f,left_on='index',right_on='driver_id',how='left')
-for i in range(0,26): 
-    df_8.iloc[i,1:1441]=(df_8.iloc[i,1442]-(df_8.iloc[i,1:1441]*0.62/df_8.iloc[i,1443]))/df_8.iloc[i,1442]
-    
-df_8.to_csv("SOC.csv")    
 # =============================================================================
-#             dist_list.remove(value) 
-#             break   
-# =============================================================================
-# =============================================================================
-#             dist_cumula = {key[i]: value[i] for i in range(0,1440)}    
-# =============================================================================
- 
-    
-# =============================================================================
-# for i in range (list_position[0]+1,list_position[1]+1):    
-#     dist_list.append(dist[0]/(list_position[1]-list_position[0]))
+# #filter driver id, capcaity, MKWH
+# df5_f=df_5[['driver_id','capacity','MKWH']]
+# df5_f=df5_f.drop_duplicates()
+# 
+# 
+# #left merge
+# df_8=cum_distance_df_2.merge(df5_f,left_on='index',right_on='driver_id',how='left')
+# for i in range(0,26): 
+#     df_8.iloc[i,1:1441]=(df_8.iloc[i,1442]-(df_8.iloc[i,1:1441]*0.62/df_8.iloc[i,1443]))/df_8.iloc[i,1442]
 #     
-# for i in range (list_position[1]+1,list_position[2]+1):    
-#     dist_list.append(dist[1]/(list_position[2]-list_position[1]))  
+# df_8.to_csv("SOC.csv")    
 # =============================================================================
 
 
 
-#usung haversine formula find distance
-from math import sin, cos, sqrt, atan2, radians
 
