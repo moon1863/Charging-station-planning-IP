@@ -56,6 +56,7 @@ ax = fig.add_subplot(111)
 for i in working_hr_merged['driver_id'].unique():
     working_hr_merged[working_hr_merged['driver_id']==i].duration.plot(ax=ax,kind='density') 
     plt.title('pdf of working hours of drivers') 
+    plt.xlabel('Working hours')
     
 
 
