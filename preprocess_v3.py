@@ -469,11 +469,11 @@ from sklearn.cluster import KMeans
 import seaborn as sns; sns.set()
 import csv
 
-K_clusters = range(1,20)
+K_clusters = range(1,30)
 kmeans = [KMeans(n_clusters=i) for i in K_clusters]
 Y_axis = df_clst[['N_lat']]#two bracket makes it dataframe
 X_axis = df_clst[['N_long']]
-score = [kmeans[i].fit(Y_axis).score(Y_axis) for i in range(len(kmeans))]
+score = [kmeans[i].fit(df_clst[df_clst.columns[1:3]]).score(df_clst[df_clst.columns[1:3]]) for i in range(len(kmeans))]
 # Visualize
 plt.plot(K_clusters, score)
 plt.xlabel('Number of Clusters')
