@@ -104,12 +104,25 @@ dri_count=dri_count.reset_index()
 #Take more than one row otherwise pdf is not started to plot
 dri_count_10=dri_count[dri_count['#count_available']>1]
 working_hr_merged=working_hour_up.merge(dri_count_10,left_on='driver_id',right_on='driver_id')
-working_hr_merged.to_csv("working_hr_merged.csv")
-#positive dureations are taken
+
 working_hr_merged=working_hr_merged[working_hr_merged['duration']>0]
+working_hr_merged.to_csv("working_hr_merged.csv")
+#IF YOU HAVE RESULTANT CSV YOU START FROM HERE 
+
+import pandas as pd
+working_hr_merged=pd.read_csv("working_hr_merged.csv")
+
+#positive dureations are taken
+
 import matplotlib.pyplot as plt
 
-#plot
+#plot for austine data's working hours
+working_hr_merged.duration.plot(kind='density')
+plt.xlabel('working hrs')
+plt.ylabel('pdf')
+plt.title("pdf for working hrs from rideaustin data")
+
+#plot for each driver_id
 fig = plt.figure(figsize=(15,15))
 ax = fig.add_subplot(111)
 for i in working_hr_merged['driver_id'].unique():
@@ -117,4 +130,57 @@ for i in working_hr_merged['driver_id'].unique():
     plt.title('pdf of working hours of drivers') 
     plt.xlabel('Working hours')
     
+#find best distribution and statistics/params
+import scipy.stats as st
 
+#f0lowwing fucntion copied from stakeoverflow
+def get_best_distribution(data):
+    dist_names = ["norm", "lognorm"]
+    dist_results = []
+    params = {}
+    for dist_name in dist_names:
+        dist = getattr(st, dist_name)
+        param = dist.fit(data)
+
+        params[dist_name] = param
+        # Applying the Kolmogorov-Smirnov test
+        D, p = st.kstest(data, dist_name, args=param)
+        print("p value for "+dist_name+" = "+str(p))
+        dist_results.append((dist_name, p))
+
+    # select the best fitted distribution
+    best_dist, best_p = (max(dist_results, key=lambda item: item[1]))
+    # store the name of the best fit and its p value
+
+    print("Best fitting distribution: "+str(best_dist))
+    print("Best p value: "+ str(best_p))
+    print("Parameters for the best fit: "+ str(params[best_dist]))
+
+    return best_dist, best_p, params[best_dist]    
+    
+print(get_best_distribution(working_hr_merged['duration']))
+
+#plot the best distributioncurve ,here, normal
+#plot pdf of gaussian/normal distribution 
+bin_li=[]
+mu,sigma=3.37,2.93
+len(set(driver_id)=4803
+s = np.random.normal(mu, sigma, len(set(driver_id)))
+    
+# Create the bins and histogram
+count, bins, ignored = plt.hist(s, 20)#20 intervals
+#bins=if bins is:[1, 2, 3, 4]then the first bin is [1, 2) (including 1, but excluding 2) 
+#and the second [2, 3). The last bin, however, is [3, 4], which includes 4., 
+#counts are values for each interval
+bin_li.append(bins)
+
+    
+    # Plot the distribution curve
+
+fig = plt.figure(figsize=(5,5))
+ax = fig.add_subplot(111)
+
+ax.plot(bin_li[0], 1/(sigma * np.sqrt(2 * np.pi)) * np.exp( - (bin_li[0] - mu)**2 / (2 * sigma**2)), linewidth=3)
+
+
+plt.show()
