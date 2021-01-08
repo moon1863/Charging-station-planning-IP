@@ -20,14 +20,14 @@ with open('working_hr_merged.csv', 'r',encoding='utf-8') as f:
 #find mean
 sum=0    
 for i in range(0,len(data)):
-    sum=sum+float(data[i][7])    
+    sum=sum+float(data[i][8])    
 
 mean=sum/len(data)
 
 #find std deaviation
 sum_2=0
 for i in range(0,len(data)):
-    sum_2=sum_2+(float(data[i][7])-mean)**2
+    sum_2=sum_2+(float(data[i][8])-mean)**2
 
 import math
 std=math.sqrt(sum_2/len(data))       
@@ -35,8 +35,9 @@ std=math.sqrt(sum_2/len(data))
 #find total number of drivers
 driver_id=[]
 for i in range (0,len(data)):
-      driver_id.append(data[i][1]) 
+      driver_id.append(data[i][2]) 
 len(set(driver_id))
+#len(set(driver_id))=4803
 
 #plot pdf of gaussian distribution 
 bin_li=[]
